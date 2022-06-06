@@ -1,0 +1,97 @@
+Build custom VPC with EC2 instances and ELB
+
+- VPC
+	- name - 
+	- IPv4 CIDR block - 10.0.0.0/16
+	- Create
+
+Create Subnet
+- Subnets
+	- name - 10.0.1.0 - us-east-1a
+	- VPC - select the target one (the newly created)
+	- select AZ
+	- IPv4 CIDR block - 10.0.1.0/24
+	- Create
+
+- create a second subnet
+	- name - 10.0.2.0 - us-east-1b
+	- VPC - select the target one (the newly created)
+	- select AZ
+	- IPv4 CIDR block - 10.0.2.0/24
+	- Create
+
+Create an Internet Gateway for internet connectivity
+- create igw
+	- name - MyIGW
+	- Create
+
+Attach IGW to a VPC
+- Attach to VPC
+	- select from the VPCs
+	- Attach
+
+Route Tables
+Select the one with the VPC name appended to it
+- Subnet Associations
+	- create another table - not to use the main route table for public access
+		- name - MyInternetRouteOut
+		- select the target VPC
+		- Create
+		- after Creation
+			- select the new table
+			- Routes
+			- Edit
+			- Add another rule
+				- Destination - 0.0.0.0/0
+				- select Internet Gateway - it will show the available IGWs
+				- add a route for IPv6 as well
+					- Add another rule
+					- ::/0
+					- select the IGW
+	- Subnet Associations - modify one subnet to be public
+		- Edit
+		- select the subnet 10.0.1.0 - us-east-1a
+		- Save
+	- Edit the given subnet
+		- select the tick for Auto-assign IPs
+
+Create EC2 instances
+- Launch instances
+	- Network - Edit the VPC
+		- choose the target VPC
+	- select subnet - should be the one accessibe via the internet
+	- name - MyWebServer
+	- security groups 
+		- create new
+		- name - Web-DMZ
+		- description - Web-DMZ
+		- add rule
+		- Type - HTTP
+		- Port - 80
+		- Source - 0.0.0.0/0, ::/0
+	- key pair - create new and download the file
+- Launch a second instance for the private subnet
+	- name - MyPrivateServer
+	- security group - select the default one
+	- key pair - use existing one
+
+Create Elastic Load Balancer
+- select Application Load Balancer (distribute incoming traffic between EC2 instances)
+- name - MyELB
+- select security groups
+- Listeners and routing - create a target group
+
+Create a CloudWatch Alarm
+- create an IAM role
+	- in the Permissions search box - CloudWatchAgentServerPolicy
+	- create role
+- in the EC2 instances
+	- select an instance
+	- Actions -> Modify ... -> Manage CloudWatch alarms
+	- in the Manage CloudWatch alarms
+		- Alarm notification - select
+		- Alarm action - click the button
+			- select an action - Reboot
+		- in the Alarm threshold - check the preset values
+		- name - rename (if you will) - MyEC2RecoveryNeedAlarm
+		- Create
